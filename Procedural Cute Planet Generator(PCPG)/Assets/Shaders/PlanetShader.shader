@@ -1,8 +1,14 @@
 Shader "Custom/PlanetShader"
 {
+	//HEIGHT MAP BULLSHIT
+	//https://catlikecoding.com/unity/tutorials/rendering/part-6/
+
     Properties
 	{
+		_HeightMapScale("height float", Float) = 0.5
 		_MaskTex("Mask", 2D) = "white" {}
+		_HeightMap("HeightMap", 2D) = "white" {}
+		_MainTex("Empty Main", 2D) = "white" {}
 		_GrassTex("Grasslands", 2D) = "white" {}
 		_SnowTex("SnowField", 2D) = "white" {}
 		_DesertTex("Desertwaste", 2D) = "white" {}
@@ -24,6 +30,7 @@ Shader "Custom/PlanetShader"
 			{
 				float4 vertex : POSITION;
 				float2 uv : TEXCOORD0;
+				float3 normal : NORMAL;
 			};
 
 			struct v2f
@@ -33,10 +40,13 @@ Shader "Custom/PlanetShader"
 			};
 
 			sampler2D _MaskTex;
+			sampler2D _HeightMap;
+			sampler2D _MainTex;
 			sampler2D _GrassTex;
 			sampler2D _SnowTex;
 			sampler2D _DesertTex;
 			sampler2D _OceanTex;
+			float _HeightMapScale;
 
 			float4 _MaskTex_ST;
 
@@ -44,12 +54,13 @@ Shader "Custom/PlanetShader"
 			{
 				v2f o;
 
+				float displacement = tex2Dlod(_HeightMap, float4(v.uv.xy, 0, 0)).r;
+				v.vertex.xyz += v.normal + displacement * (_HeightMapScale * -1);
+
 				o.vertex = UnityObjectToClipPos(v.vertex);
+
 				o.uv = TRANSFORM_TEX(v.uv, _MaskTex);
-
-				//Height displacement using perlin noise goes here
-				// \/\/\/
-
+				UNITY_TRANSFER_FOG(o, o.vertex);
 				return o;
 			}
 
@@ -57,6 +68,7 @@ Shader "Custom/PlanetShader"
 			{
 				// sample the textures
 				fixed4 mask = tex2D(_MaskTex, i.uv);
+				fixed4 height = tex2D(_HeightMap, i.uv);
 				fixed4 grass = tex2D(_GrassTex, i.uv);
 				fixed4 snow = tex2D(_SnowTex, i.uv);
 				fixed4 sand = tex2D(_DesertTex, i.uv);
@@ -68,7 +80,7 @@ Shader "Custom/PlanetShader"
 				sand = sand * mask.b;
 
 				// combine all masked textures as output
-				return grass + snow + sand;
+				return height;
 			}
 			ENDCG
 		}

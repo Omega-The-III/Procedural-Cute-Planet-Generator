@@ -12,7 +12,6 @@ public class PlanetGenScript : MonoBehaviour
     private Mesh planetMesh;
 
     private Vector3 center;
-    public bool hasUpdated = false;
 
     private void Start()
     {
@@ -37,8 +36,5 @@ public class PlanetGenScript : MonoBehaviour
                 //verticeCenterDirection[i] = ((verticeMap[i] - center).normalized);
             }
         }
-
-        //todo make array into 2d array, somehow.
-        //all x and y positions are in the 'same' position. a vertice on x = 1 and y = 11.567 is will also have a verticy on x = 2 and y = 11.567
     }
 }
