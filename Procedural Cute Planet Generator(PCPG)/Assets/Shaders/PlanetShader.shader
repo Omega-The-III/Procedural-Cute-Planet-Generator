@@ -9,11 +9,11 @@ Shader "Custom/PlanetShader"
 		_DisplacementScale("displacement scale", Float) = 1
 		_MaskTex("Mask", 2D) = "white" {}
 		_HeightMap("HeightMap", 2D) = "white" {}
-		_MainTex("Empty Main", 2D) = "white" {}
 		_GrassTex("Grasslands", 2D) = "white" {}
 		_SnowTex("SnowField", 2D) = "white" {}
 		_DesertTex("Desertwaste", 2D) = "white" {}
 		_OceanTex("Ocean", 2D) = "white" {}
+		_VolcanicTex("Volcanic", 2D) = "white" {}
 	}
 		SubShader
 	{
@@ -47,6 +47,7 @@ Shader "Custom/PlanetShader"
 			sampler2D _SnowTex;
 			sampler2D _DesertTex;
 			sampler2D _OceanTex;
+			sampler2D _VolcanicTex;
 			float _SizeScale;
 			float _DisplacementScale;
 
@@ -75,16 +76,19 @@ Shader "Custom/PlanetShader"
 				fixed4 height = tex2D(_HeightMap, i.uv);
 				fixed4 grass = tex2D(_GrassTex, i.uv);
 				fixed4 snow = tex2D(_SnowTex, i.uv);
-				fixed4 sand = tex2D(_DesertTex, i.uv);
+				fixed4 desert = tex2D(_DesertTex, i.uv);
 				fixed4 ocean = tex2D(_OceanTex, i.uv);
+				fixed4 volcanic = tex2D(_VolcanicTex, i.uv);
 
 				// mask the different texture by the corrosponding rgb channels in the mask
-				grass = grass * mask.r;
-				snow = snow * mask.g;
-				sand = sand * mask.b;
+				grass = grass * mask.g;
+				snow = snow * mask.b;
+				desert = desert * mask.r;
+				volcanic = volcanic * mask.a;
 
+				fixed4 results = grass + desert + snow;
 				// combine all masked textures as output
-				return height;
+				return results;
 			}
 			ENDCG
 		}

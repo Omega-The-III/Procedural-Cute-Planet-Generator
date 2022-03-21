@@ -16,9 +16,12 @@ public class MapGenerator : MonoBehaviour
     [SerializeField] private float heightNoiseScale;
 
     [Header("Heightmap variables")]
+    [SerializeField] private int amountOfExtraBiomes = 3;
     [SerializeField] private float blendNoiseScale;
     [SerializeField] private float redThresholdMin;
-    [SerializeField] private float blueThresholdMax;
+    [SerializeField] private float blueThresholdMin;
+    [SerializeField] private float purpleThresholdMin;
+    private float extraGreenThreshold = 0.2f;
     enum MapType { heightMap, blendMap };
 
     [SerializeField] List<MapType> Maps = new List<MapType>();
@@ -45,28 +48,51 @@ public class MapGenerator : MonoBehaviour
     private void GenerateBlendmap()
     {
         Texture2D blendmapTexture = new Texture2D(textureSize, textureSize, TextureFormat.ARGB32, true);
-        float[,] redNoiseMap = new float[textureSize, textureSize];
-        float[,] blueNoiseMap = new float[textureSize, textureSize];
-        int xOffset = Random.Range(-10000, 10000);
-        int yOffset = Random.Range(-10000, 10000);
 
         for (int y = 0; y < textureSize; y++)
         {
             for (int x = 0; x < textureSize; x++)
             {
-                float redNoiseValue = Mathf.PerlinNoise(x * blendNoiseScale + xOffset, y * blendNoiseScale + yOffset);
-                float blueNoiseValue = Mathf.PerlinNoise(x * blendNoiseScale + yOffset, y * blendNoiseScale + xOffset);
-                redNoiseMap[x, y] = redNoiseValue;
-                blueNoiseMap[x, y] = blueNoiseValue;
-
                 blendmapTexture.SetPixel(x, y, Color.green);
-
-                if (redNoiseMap[x, y] < redThresholdMin)
-                    blendmapTexture.SetPixel(x, y, Color.red);
-                if(blueNoiseMap[x, y] > blueThresholdMax)
-                    blendmapTexture.SetPixel(x, y, Color.blue);
             }
         }
+
+        for (int i = 0; i < amountOfExtraBiomes + 1; i++) {
+            int xOffset = Random.Range(-10000, 10000);
+            int yOffset = Random.Range(-10000, 10000);
+            float[,] NoiseMap = new float[textureSize, textureSize];
+
+            for (int y = 0; y < textureSize; y++)
+            {
+                for (int x = 0; x < textureSize; x++)
+                {
+                    float noiseValue = Mathf.PerlinNoise(x * blendNoiseScale + xOffset, y * blendNoiseScale + yOffset);
+                    NoiseMap[x, y] = noiseValue;
+
+                    switch (i)
+                    {
+                        case 0:
+                            if (NoiseMap[x, y] < redThresholdMin)
+                                blendmapTexture.SetPixel(x, y, Color.red);
+                            break;
+                        case 1:
+                            if (NoiseMap[x, y] < blueThresholdMin)
+                                blendmapTexture.SetPixel(x, y, Color.blue);
+                            break;
+                        case 2:
+                            if (NoiseMap[x, y] < purpleThresholdMin)
+                                blendmapTexture.SetPixel(x, y, Color.black);
+                            break;
+                        case 3:
+                            if (NoiseMap[x, y] < extraGreenThreshold)
+                                blendmapTexture.SetPixel(x, y, Color.green);
+                            break;
+                    }
+                    
+                }
+            }
+        }
+
         blendmapTexture.Apply();
 
         string path = "./Assets/generatedtextures/texturemap.png";
