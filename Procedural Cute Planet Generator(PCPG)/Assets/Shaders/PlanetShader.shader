@@ -5,7 +5,8 @@ Shader "Custom/PlanetShader"
 
     Properties
 	{
-		_HeightMapScale("height float", Float) = 0.5
+		_SizeScale("size scale", Float) = 20
+		_DisplacementScale("displacement scale", Float) = 1
 		_MaskTex("Mask", 2D) = "white" {}
 		_HeightMap("HeightMap", 2D) = "white" {}
 		_MainTex("Empty Main", 2D) = "white" {}
@@ -46,7 +47,8 @@ Shader "Custom/PlanetShader"
 			sampler2D _SnowTex;
 			sampler2D _DesertTex;
 			sampler2D _OceanTex;
-			float _HeightMapScale;
+			float _SizeScale;
+			float _DisplacementScale;
 
 			float4 _MaskTex_ST;
 
@@ -55,7 +57,9 @@ Shader "Custom/PlanetShader"
 				v2f o;
 
 				float displacement = tex2Dlod(_HeightMap, float4(v.uv.xy, 0, 0)).r;
-				v.vertex.xyz += v.normal + displacement * (_HeightMapScale * -1);
+				v.vertex.xyz += v.normal * _SizeScale;
+				displacement = displacement * _DisplacementScale;
+				v.vertex.xyz += v.normal * displacement;
 
 				o.vertex = UnityObjectToClipPos(v.vertex);
 

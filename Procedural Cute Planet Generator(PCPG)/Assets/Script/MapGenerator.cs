@@ -9,8 +9,17 @@ public class MapGenerator : MonoBehaviour
     private MeshRenderer planetRenderer;
 
     [SerializeField] private int textureSize;
-    [SerializeField] private float mountainThreshold, waterThreshold, heightMapNoiseScale;
-    enum MapType { heightMap, textureMap };
+
+    [Header("Heightmap variables")]
+    [SerializeField] private float mountainThreshold;
+    [SerializeField] private float waterThreshold;
+    [SerializeField] private float heightNoiseScale;
+
+    [Header("Heightmap variables")]
+    [SerializeField] private float blendNoiseScale;
+    [SerializeField] private float redThresholdMin;
+    [SerializeField] private float blueThresholdMax;
+    enum MapType { heightMap, blendMap };
 
     [SerializeField] List<MapType> Maps = new List<MapType>();
     
@@ -27,11 +36,43 @@ public class MapGenerator : MonoBehaviour
                 case MapType.heightMap:
                     GenerateHeightMap();
                     break;
-                case MapType.textureMap:
-                    //create texture map
+                case MapType.blendMap:
+                    GenerateBlendmap();
                     break;
             }
         }
+    }
+    private void GenerateBlendmap()
+    {
+        Texture2D blendmapTexture = new Texture2D(textureSize, textureSize, TextureFormat.ARGB32, true);
+        float[,] redNoiseMap = new float[textureSize, textureSize];
+        float[,] blueNoiseMap = new float[textureSize, textureSize];
+        int xOffset = Random.Range(-10000, 10000);
+        int yOffset = Random.Range(-10000, 10000);
+
+        for (int y = 0; y < textureSize; y++)
+        {
+            for (int x = 0; x < textureSize; x++)
+            {
+                float redNoiseValue = Mathf.PerlinNoise(x * blendNoiseScale + xOffset, y * blendNoiseScale + yOffset);
+                float blueNoiseValue = Mathf.PerlinNoise(x * blendNoiseScale + yOffset, y * blendNoiseScale + xOffset);
+                redNoiseMap[x, y] = redNoiseValue;
+                blueNoiseMap[x, y] = blueNoiseValue;
+
+                blendmapTexture.SetPixel(x, y, Color.green);
+
+                if (redNoiseMap[x, y] < redThresholdMin)
+                    blendmapTexture.SetPixel(x, y, Color.red);
+                if(blueNoiseMap[x, y] > blueThresholdMax)
+                    blendmapTexture.SetPixel(x, y, Color.blue);
+            }
+        }
+        blendmapTexture.Apply();
+
+        string path = "./Assets/generatedtextures/texturemap.png";
+        File.WriteAllBytes(path, blendmapTexture.EncodeToPNG());
+        planetRenderer.material.SetTexture("_MaskTex", blendmapTexture);
+        Debug.Log("Generated texture blendmap!");
     }
     private void GenerateHeightMap()
     {
@@ -44,13 +85,13 @@ public class MapGenerator : MonoBehaviour
         {
             for (int x = 0; x < textureSize; x++)
             {
-                float noiseValue = Mathf.PerlinNoise(x * heightMapNoiseScale + xOffset, y * heightMapNoiseScale + yOffset);
+                float noiseValue = Mathf.PerlinNoise(x * heightNoiseScale + xOffset, y * heightNoiseScale + yOffset);
                 noiseMap[x, y] = noiseValue;
 
                 if (noiseMap[x, y] < waterThreshold)
-                    noiseTexture.SetPixel(x, y, Color.white);
-                else if (noiseMap[x, y] > mountainThreshold)
                     noiseTexture.SetPixel(x, y, Color.black);
+                else if (noiseMap[x, y] > mountainThreshold)
+                    noiseTexture.SetPixel(x, y, Color.white);
                 else
                     noiseTexture.SetPixel(x, y, Color.gray);
             }

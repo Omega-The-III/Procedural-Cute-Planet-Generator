@@ -497,8 +497,11 @@ MonoBehaviour:
   textureSize: 128
   mountainThreshold: 0.8
   waterThreshold: 0.3
-  heightMapNoiseScale: 0.1
-  Maps: 00000000
+  heightNoiseScale: 0.1
+  blendNoiseScale: 0.04
+  redThresholdMin: 0.35
+  blueThresholdMax: 0.65
+  Maps: 0000000001000000
 --- !u!4 &1305057044
 Transform:
   m_ObjectHideFlags: 0
