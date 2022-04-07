@@ -6,58 +6,62 @@ using UnityEngine;
 public class MapGenerator : MonoBehaviour
 {
     [SerializeField] GameObject planetObject;
-    private MeshRenderer planetRenderer;
+    [SerializeField] MeshRenderer planetRenderer;
 
     [SerializeField] private int textureSize;
 
-    [Header("Heightmap variables")]
-    [SerializeField] private float mountainThreshold;
-    [SerializeField] private float waterThreshold;
-    [SerializeField] private float heightNoiseScale;
+    [SerializeField] private bool UseTextures;
+    [SerializeField] private List<Texture> BiomeTextures = new List<Texture>();
 
-    [Header("Heightmap variables")]
-    [SerializeField] private int amountOfExtraBiomes = 3;
-    [SerializeField] private float blendNoiseScale;
-    [SerializeField] private float redThresholdMin;
-    [SerializeField] private float blueThresholdMin;
-    [SerializeField] private float purpleThresholdMin;
-    private float extraGreenThreshold = 0.2f;
-    enum MapType { heightMap, blendMap };
+    [HideInInspector] public float mountainThreshold;
+    [HideInInspector] public float waterThreshold;
+    [HideInInspector] public float heightNoiseScale;
 
-    [SerializeField] List<MapType> Maps = new List<MapType>();
-    
-    void Start()
+    [HideInInspector] public float blendNoiseScale;
+    [HideInInspector] public float grassThreshold;
+    [HideInInspector] public float desertThreshold;
+    [HideInInspector] public float snowThreshold;
+    [HideInInspector] public float volcanicThreshold;
+    private void Start()
     {
-        planetRenderer = planetObject.GetComponent<MeshRenderer>();
-
-        MapType currentMap;
-        for (int i = 0; i < Maps.Count; i++)
+        if (UseTextures)
         {
-            currentMap = Maps[i];
-            switch (currentMap)
-            {
-                case MapType.heightMap:
-                    GenerateHeightMap();
-                    break;
-                case MapType.blendMap:
-                    GenerateBlendmap();
-                    break;
-            }
+            planetRenderer.material.SetTexture("_GrassTex", BiomeTextures[0]);
+            planetRenderer.material.SetTexture("_DesertTex", BiomeTextures[1]);
+            planetRenderer.material.SetTexture("_SnowTex", BiomeTextures[2]);
+            planetRenderer.material.SetTexture("_VolcanicTex", BiomeTextures[3]);
+        } else {
+            planetRenderer.material.SetTexture("_GrassTex", BiomeTextures[4]);
+            planetRenderer.material.SetTexture("_DesertTex", BiomeTextures[5]);
+            planetRenderer.material.SetTexture("_SnowTex", BiomeTextures[6]);
+            planetRenderer.material.SetTexture("_VolcanicTex", BiomeTextures[7]);
         }
     }
-    private void GenerateBlendmap()
+    public void GenerateBiomeBlendmap(List<Biomes> biomePriorityList)
     {
-        Texture2D blendmapTexture = new Texture2D(textureSize, textureSize, TextureFormat.ARGB32, true);
+        Texture2D blendmapTexOne = new Texture2D(textureSize, textureSize, TextureFormat.RGB48, true);
+        Texture2D blendmapTexTwo = new Texture2D(textureSize, textureSize, TextureFormat.RGB48, true);
 
+        //Base layer for maskOne is green
         for (int y = 0; y < textureSize; y++)
         {
             for (int x = 0; x < textureSize; x++)
             {
-                blendmapTexture.SetPixel(x, y, Color.green);
+                blendmapTexOne.SetPixel(x, y, Color.green);
             }
         }
 
-        for (int i = 0; i < amountOfExtraBiomes + 1; i++) {
+        //Base layer for maskOne is black
+        for (int y = 0; y < textureSize; y++)
+        {
+            for (int x = 0; x < textureSize; x++)
+            {
+                blendmapTexTwo.SetPixel(x, y, Color.black);
+            }
+        }
+
+        //For all listed biomes, add biomes.
+        for (int i = 0; i < biomePriorityList.Count; i++) {
             int xOffset = Random.Range(-10000, 10000);
             int yOffset = Random.Range(-10000, 10000);
             float[,] NoiseMap = new float[textureSize, textureSize];
@@ -69,38 +73,43 @@ public class MapGenerator : MonoBehaviour
                     float noiseValue = Mathf.PerlinNoise(x * blendNoiseScale + xOffset, y * blendNoiseScale + yOffset);
                     NoiseMap[x, y] = noiseValue;
 
-                    switch (i)
+                    switch (biomePriorityList[i])
                     {
-                        case 0:
-                            if (NoiseMap[x, y] < redThresholdMin)
-                                blendmapTexture.SetPixel(x, y, Color.red);
+                        case Biomes.grass:
+                            if (NoiseMap[x, y] < grassThreshold)
+                                blendmapTexOne.SetPixel(x, y, Color.green);
                             break;
-                        case 1:
-                            if (NoiseMap[x, y] < blueThresholdMin)
-                                blendmapTexture.SetPixel(x, y, Color.blue);
+                        case Biomes.desert:
+                            if (NoiseMap[x, y] < desertThreshold)
+                                blendmapTexOne.SetPixel(x, y, Color.red);
                             break;
-                        case 2:
-                            if (NoiseMap[x, y] < purpleThresholdMin)
-                                blendmapTexture.SetPixel(x, y, Color.black);
+                        case Biomes.snow:
+                            if (NoiseMap[x, y] < snowThreshold)
+                                blendmapTexOne.SetPixel(x, y, Color.blue);
                             break;
-                        case 3:
-                            if (NoiseMap[x, y] < extraGreenThreshold)
-                                blendmapTexture.SetPixel(x, y, Color.green);
+                            //Start MaskTexTwo biomes
+                        case Biomes.volcanic:
+                            if (NoiseMap[x, y] < volcanicThreshold)
+                                blendmapTexTwo.SetPixel(x, y, Color.red);
                             break;
                     }
-                    
                 }
             }
         }
 
-        blendmapTexture.Apply();
+        blendmapTexOne.Apply();
+        string path = "./Assets/generatedtextures/texturemapOne.png";
+        File.WriteAllBytes(path, blendmapTexOne.EncodeToPNG());
+        planetRenderer.material.SetTexture("_MaskTexOne", blendmapTexOne);
 
-        string path = "./Assets/generatedtextures/texturemap.png";
-        File.WriteAllBytes(path, blendmapTexture.EncodeToPNG());
-        planetRenderer.material.SetTexture("_MaskTex", blendmapTexture);
+        blendmapTexTwo.Apply();
+        path = "./Assets/generatedtextures/texturemapTwo.png";
+        File.WriteAllBytes(path, blendmapTexTwo.EncodeToPNG());
+        planetRenderer.material.SetTexture("_MaskTexTwo", blendmapTexTwo);
+        
         Debug.Log("Generated texture blendmap!");
     }
-    private void GenerateHeightMap()
+    public void GenerateHeightMap()
     {
         Texture2D noiseTexture = new Texture2D(textureSize, textureSize, TextureFormat.ARGB32, true);
         float[,] noiseMap = new float[textureSize, textureSize];
@@ -122,6 +131,14 @@ public class MapGenerator : MonoBehaviour
                     noiseTexture.SetPixel(x, y, Color.gray);
             }
         }
+        for (int y = 0; y < textureSize; y += textureSize - 1)
+        {
+            for (int x = 0; x < textureSize; x++)
+            {
+                noiseTexture.SetPixel(x, y, Color.gray);
+            }
+        }
+
         noiseTexture.Apply();
 
         string path = "./Assets/generatedtextures/Noisemap.png";
