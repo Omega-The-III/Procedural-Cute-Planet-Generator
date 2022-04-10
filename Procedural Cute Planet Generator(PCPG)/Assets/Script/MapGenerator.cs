@@ -24,6 +24,11 @@ public class MapGenerator : MonoBehaviour
     [HideInInspector] public float volcanicThreshold;
     private void Start()
     {
+        if (!Directory.Exists(Application.dataPath + "/generatedTextures"))
+        {
+            Directory.CreateDirectory(Application.dataPath + "/generatedTextures");
+        }
+
         if (UseTextures)
         {
             planetRenderer.material.SetTexture("_GrassTex", BiomeTextures[0]);
@@ -97,17 +102,17 @@ public class MapGenerator : MonoBehaviour
             }
         }
 
+        string path;
+
         blendmapTexOne.Apply();
-        string path = "./Assets/generatedtextures/texturemapOne.png";
+        path = Application.dataPath + "/generatedTextures/texturemapOne.png";
         File.WriteAllBytes(path, blendmapTexOne.EncodeToPNG());
         planetRenderer.material.SetTexture("_MaskTexOne", blendmapTexOne);
 
         blendmapTexTwo.Apply();
-        path = "./Assets/generatedtextures/texturemapTwo.png";
+        path = Application.dataPath + "/generatedTextures/texturemapTwo.png";
         File.WriteAllBytes(path, blendmapTexTwo.EncodeToPNG());
         planetRenderer.material.SetTexture("_MaskTexTwo", blendmapTexTwo);
-        
-        Debug.Log("Generated texture blendmap!");
     }
     public void GenerateHeightMap()
     {
@@ -140,10 +145,8 @@ public class MapGenerator : MonoBehaviour
         }
 
         noiseTexture.Apply();
-
-        string path = "./Assets/generatedtextures/Noisemap.png";
+        string path = Application.dataPath + "/generatedTextures/heightmap.png";
         File.WriteAllBytes(path, noiseTexture.EncodeToPNG());
         planetRenderer.material.SetTexture("_HeightMap", noiseTexture);
-        Debug.Log("Generated heightmap!");
     }
 }

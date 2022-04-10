@@ -1,3 +1,5 @@
+using UnityEngine.UIElements;
+
 [System.Serializable]
 public class question
 {
@@ -15,8 +17,10 @@ public class awnser
 }
 
 [System.Serializable]
-public class ThreshHoldType
+public class SliderObject
 {
+    public string name;
+    public float minVal, maxVal;
     public float value;
-    public valueChangeType valueType;
+    public Slider slider;
 }
